@@ -8,6 +8,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -69,7 +70,31 @@ return Application::configure(basePath: dirname(__DIR__))
                     'code' => 401,
                     'success' => false,
                     'message' => 'Unauthenticated',
+                    'error' => 'Authentication token is required'
                 ], 401);
+            }
+        });
+
+        // Route Not Defined Error (untuk login route yang tidak ada) → 401 JSON untuk API
+        $exceptions->render(function (RouteNotFoundException $e, $request) {
+            if ($request->is('api/*')) {
+                // Jika error karena route 'login' not defined, ini berarti user tidak authenticated
+                if (str_contains($e->getMessage(), 'Route [login] not defined')) {
+                    return response()->json([
+                        'code' => 401,
+                        'success' => false,
+                        'message' => 'Unauthenticated',
+                        'error' => 'Authentication token is required'
+                    ], 401);
+                }
+
+                // Untuk route not found lainnya
+                return response()->json([
+                    'code' => 404,
+                    'success' => false,
+                    'message' => 'Route not found',
+                    'error' => 'The requested API endpoint does not exist'
+                ], 404);
             }
         });
 
