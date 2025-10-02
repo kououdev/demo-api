@@ -32,7 +32,7 @@ class CustomerController extends Controller
 
     public function show(string $id)
     {
-        $customer = Customer::findOrFail($id);
+        $customer = Customer::with('tickets')->findOrFail($id);
         return $this->successResponse($customer, 'Customer retrieved successfully');
     }
 
