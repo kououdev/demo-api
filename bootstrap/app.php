@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (ModelNotFoundException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
-                    'code' => '404',
+                    'code' => 404,
                     'success' => false,
                     'message' => 'Resource not found',
                 ], 404);
@@ -42,7 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (NotFoundHttpException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
-                    'code' => '404',
+                    'code' => 404,
                     'success' => false,
                     'message' => 'Route not found',
                     'error' => 'The requested API endpoint does not exist'
@@ -54,7 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (ValidationException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
-                    'code' => '422',
+                    'code' => 422,
                     'success' => false,
                     'message' => 'Validation failed',
                     'errors' => $e->errors(),
@@ -66,7 +66,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthenticationException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
-                    'code' => '401',
+                    'code' => 401,
                     'success' => false,
                     'message' => 'Unauthenticated',
                 ], 401);
@@ -77,7 +77,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthorizationException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
-                    'code' => '403',
+                    'code' => 403,
                     'success' => false,
                     'message' => 'Forbidden',
                 ], 403);
@@ -88,7 +88,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (Throwable $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
-                    'code' => '500',
+                    'code' => 500,
                     'success' => false,
                     'message' => 'Internal server error',
                     'error'   => app()->environment('local') ? $e->getMessage() : 'Something went wrong',

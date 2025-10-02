@@ -5,21 +5,20 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Customer;
-
+use App\Traits\ApiResponse;
 
 class CustomerController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    use ApiResponse;
+
+    public function index(Request $request)
     {
-        return response()->json(Customer::all());
+        $perPage = $request->get('per_page', 10); // default 10
+        $customers = Customer::paginate($perPage);
+
+        return $this->paginatedResponse($customers, 'Customer list retrieved successfully');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -28,35 +27,32 @@ class CustomerController extends Controller
         ]);
 
         $customer = Customer::create($validated);
-        return response()->json($customer, 201);
+        return $this->successResponse($customer, 'Customer created successfully', 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         $customer = Customer::findOrFail($id);
-        return response()->json($customer);
+        return $this->successResponse($customer, 'Customer retrieved successfully');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
         $customer = Customer::findOrFail($id);
-        $customer->update($request->all());
-        return response()->json($customer, 200);
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required',
+            'email' => 'sometimes|required|unique:customers,email,' . $id,
+        ]);
+
+        $customer->update($validated);
+        return $this->successResponse($customer, 'Customer updated successfully');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $customer = Customer::findOrFail($id);
         $customer->delete();
-        return response()->json(null, 204);
+        return $this->successResponse(null, 'Customer deleted successfully', 204);
     }
 }
