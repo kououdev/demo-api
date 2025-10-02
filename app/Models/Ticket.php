@@ -5,18 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Customer extends Model
+class Ticket extends Model
 {
     use HasFactory;
 
-    // Kolom yang boleh diisi mass assignment
     protected $fillable = [
-        'name',
-        'email'
+        'customer_id',
+        'subject',
+        'description',
+        'status'
     ];
 
-    public function tickets()
+    public function customer()
     {
-        return $this->hasMany(Ticket::class);
+        return $this->belongsTo(Customer::class);
     }
 }
