@@ -8,6 +8,8 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
+use App\Helpers\ApiExceptionResponseHelper;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $helper = new ApiExceptionResponseHelper();
 
         // Global Report Handler
         $exceptions->report(function (Throwable $e) {
@@ -28,71 +31,57 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Model Not Found → 404 JSON untuk API
-        $exceptions->render(function (ModelNotFoundException $e, $request) {
+        $exceptions->render(function (ModelNotFoundException $e, $request) use ($helper) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'code' => 404,
-                    'success' => false,
-                    'message' => 'Resource not found',
-                ], 404);
+                return $helper->modelNotFound();
             }
         });
 
         // Route Not Found → 404 JSON untuk API
-        $exceptions->render(function (NotFoundHttpException $e, $request) {
+        $exceptions->render(function (NotFoundHttpException $e, $request) use ($helper) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'code' => 404,
-                    'success' => false,
-                    'message' => 'Route not found',
-                    'error' => 'The requested API endpoint does not exist'
-                ], 404);
+                return $helper->routeNotFound();
             }
         });
 
         // Validation Error → 422 JSON untuk API
-        $exceptions->render(function (ValidationException $e, $request) {
+        $exceptions->render(function (ValidationException $e, $request) use ($helper) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'code' => 422,
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $e->errors(),
-                ], 422);
+                return $helper->validationFailed($e->errors());
             }
         });
 
         // Authentication Error → 401 JSON untuk API
-        $exceptions->render(function (AuthenticationException $e, $request) {
+        $exceptions->render(function (AuthenticationException $e, $request) use ($helper) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'code' => 401,
-                    'success' => false,
-                    'message' => 'Unauthenticated',
-                ], 401);
+                return $helper->unauthenticated();
+            }
+        });
+
+        // Route Not Defined Error (untuk login route yang tidak ada) → 401 JSON untuk API
+        $exceptions->render(function (RouteNotFoundException $e, $request) use ($helper) {
+            if ($request->is('api/*')) {
+                // Jika error karena route 'login' not defined, ini berarti user tidak authenticated
+                if (str_contains($e->getMessage(), 'Route [login] not defined')) {
+                    return $helper->unauthenticated();
+                }
+
+                // Untuk route not found lainnya
+                return $helper->routeNotFound();
             }
         });
 
         // Authorization Error → 403 JSON untuk API
-        $exceptions->render(function (AuthorizationException $e, $request) {
+        $exceptions->render(function (AuthorizationException $e, $request) use ($helper) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'code' => 403,
-                    'success' => false,
-                    'message' => 'Forbidden',
-                ], 403);
+                return $helper->forbidden();
             }
         });
 
         // Default Fallback untuk API
-        $exceptions->render(function (Throwable $e, $request) {
+        $exceptions->render(function (Throwable $e, $request) use ($helper) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'code' => 500,
-                    'success' => false,
-                    'message' => 'Internal server error',
-                    'error'   => app()->environment('local') ? $e->getMessage() : 'Something went wrong',
-                ], 500);
+                return $helper->internalError($e->getMessage());
             }
         });
     })->create();
